@@ -13,11 +13,13 @@ void do_ls3(char[]);// ls
 void do_ls4(char[]);// ls
 void do_ls5(char[]);// ls -i
 void do_ls6(char[]);// ls -ial
-void do_ls7(char[]);// ls -il
-void do_ls8(char[]);// ls -ai 
+void ls_R(char path[]);//ls -R
 void dostat(char*);
 void show_file_info(char*,struct stat*);
 void mode_to_letters(int ,char[]);
+//用来适配ls -R
+void dostat2(char*,char*);
+void show_file_info2(char*,char*,struct stat*);
 char*uid_to_name(uid_t);
 char*gid_to_name(gid_t);
 void match(int argc,char*argv[]);
@@ -46,6 +48,11 @@ int has_i=0;
 int has_ial=0;
 int has_il=0;
 int has_ai=0;
+int has_R=0;
+int has_aR=0;
+int has_Rl=0;
+int has_iR=0;
+int has_aRl=0;
 //存放数组名的数组
 char *filenames[4096];		
 int file_cnt = 0;			//目录中文件个数
@@ -87,6 +94,18 @@ int main(int argc,char* argv[])
       else if(has_ai==1)
       {
         do_ls5(".");
+      }
+      else if(has_aR==1)
+      {
+        ls_R(".");
+      }
+      else if(has_R==1)
+      {
+        ls_R(".");
+      }
+      else if(has_aRl==1)
+      {
+        ls_R(".");
       }
       else 
       {
@@ -320,7 +339,7 @@ void show_file_info(char*filename,struct stat*info_p)
        int color=get_color(info);
 
   mode_to_letters(info_p->st_mode,modestr);
-  if(has_ial==1||has_il==1)
+  if(has_ial==1||has_il==1||has_aRl==1)
   printf("%ul ",info_p->st_ino);
   printf("%s ",modestr);
   printf("%4d ",(int)info_p->st_nlink);
@@ -348,6 +367,36 @@ void mode_to_letters(int mode,char str[])
   if(mode&S_IROTH)str[7]='r';
   if(mode&S_IWOTH)str[8]='w';
   if(mode&S_IXOTH)str[9]='x';
+}
+//用来适配-R
+void dostat2(char*path,char*filename)
+{
+  struct stat info;
+  if(stat(path,&info)==-1)
+    perror(path);
+  else 
+    show_file_info2(path,filename,&info);
+}
+void show_file_info2(char*path,char*filename,struct stat*info_p)
+{
+  char*uid_to_name(),*ctime(),*git_to_name(),*filemode();
+  void mode_to_letters();
+  char modestr[11];
+      struct stat info;
+       if(stat(path,&info)==-1)
+       perror(path);
+       int color=get_color(info);
+  mode_to_letters(info_p->st_mode,modestr);
+  if(has_ial==1||has_il==1)
+  printf("%ul ",info_p->st_ino);
+  printf("%s ",modestr);
+  printf("%4d ",(int)info_p->st_nlink);
+  printf("%-8s ",uid_to_name(info_p->st_uid));
+  printf("%-8s ",gid_to_name(info_p->st_gid));
+  printf("%8ld ",(long)info_p->st_size);
+  printf("%.12s ",4+ctime(&info_p->st_ctim));
+  printf_name1(filename,color);
+  printf("\n");
 }
 char*uid_to_name(gid_t uid)
 {
@@ -387,6 +436,8 @@ void match(int argc,char*argv[])
       has_a=1;
     if(strcmp(argv[i],"-l")==0)
       has_l=1;
+    if(strcmp(argv[i],"-R")==0)
+      has_R=1;
     if(strcmp(argv[i],"-al")==0||strcmp(argv[i],"-la")==0||(has_a==1&&has_l==1))
     {
      has_al=1;
@@ -407,16 +458,32 @@ void match(int argc,char*argv[])
     if(strcmp(argv[i],"-il")==0||strcmp(argv[i],"-li")==0||(has_i==1&&has_l==1))
     {
       has_il=1;
-      has_i=1;
-      has_l=1;
-    }
-     if(strcmp(argv[i],"-ia")==0||strcmp(argv[i],"-ai")==0||(has_i==1&&has_a==1))
-    {
-void do_ls6(char[]);// ls -ial
-      has_ai=1;
-      has_a=0;
       has_i=0;
+      has_l=0;
     }
+     if(strcmp(argv[i],"-Rl")==0||strcmp(argv[i],"-lR")==0||(has_l==1&&has_R==1))
+    {
+      has_Rl=1;
+      has_R=0;
+      has_l=0;
+    }
+     if(strcmp(argv[i],"-aR")==0||strcmp(argv[i],"-Ra")==0||(has_a==1&&has_l==1))
+    {
+      has_aR=1;
+      has_R=1;
+      has_a=1;
+    }
+    if(strcmp(argv[i],"-aRl")==0||strcmp(argv[i],"-alR")==0||strcmp(argv[i],"-laR")==0||strcmp(argv[i],"-lRa")==0||strcmp(argv[i],"Ral")==0||strcmp(argv[i],"Rla")==0||(has_a==1&&has_l==1&&has_R==1)||(has_aR==1&&has_l==0)||(has_Rl==1&&has_a==1)||(has_al==1&&has_R==1))
+    {
+      has_aRl=1;
+      has_a=0;
+      has_R=0;
+      has_l=0;
+      has_aR=0;
+      has_Rl=0;
+      has_al=0;
+    }
+
   }
 }
 //交换两字符串
@@ -546,4 +613,93 @@ void printf_name1(char *name,int color)
     {
         printf("\033[1m\033[33m%s\033[0m",name);
     }
+}
+void printf_name2(char *name,int color)
+{
+    if(color == GREEN)
+    {
+        printf("\033[1m\033[32m%s\033[0m  ",name);
+    }
+    else if(color == BLUE)
+    {
+        printf("\033[1m\033[34m%s\033[0m  ",name);
+    }
+    else if(color == WHITE)
+    {
+        printf("%s  ",name);
+    }
+    else if(color == LBLUE)
+    {
+        printf("\033[1m\033[36m%s\033[0m  ",name);
+    }
+    else if(color == YELLOW)
+    {
+        printf("\033[1m\033[33m%s\033[0m  ",name);
+    }
+}
+void ls_R(char path[])
+{
+  printf("%s:\n",path);
+  DIR*dir_ptr;
+  struct dirent*direntp;
+  if((dir_ptr=opendir(path))==NULL)//打开目录
+    fprintf(stderr,"lsl:cannot open %s\n",path);
+  else 
+  {
+    while((direntp=readdir(dir_ptr))!=NULL)//读取当前目录文件
+    {
+      restored_ls(direntp);
+    }
+       sort(filenames,0,file_cnt-1);                          
+    int j=0;
+    int i=0;
+    for(j=0;j<file_cnt;++j)
+    {
+      if(has_aRl==1)
+      {
+          char temp1[PATH_MAX];
+         sprintf(temp1,"%s/%s",path,filenames[j]);
+         dostat2(temp1,filenames[j]);
+         continue;
+      }
+      if(filenames[j][0]=='.')
+        continue;
+      struct stat info;
+      char temp1[PATH_MAX];
+      sprintf(temp1,"%s/%s",path,filenames[j]);
+      if(stat(temp1,&info)==-1)
+        perror(temp1);
+      int color=get_color(info);
+      printf_name2(filenames[j],color);
+    }
+  }
+  printf("\n");
+  printf("\n");
+  file_cnt=0;
+  closedir(dir_ptr);
+  if((dir_ptr=opendir(path))==NULL)//打开目录
+    fprintf(stderr,"lsl:cannot open %s\n",path);
+  else 
+  {
+    while((direntp=readdir(dir_ptr))!=NULL)
+    {
+      if(strcmp(direntp->d_name,".")==0||strcmp(direntp->d_name,"..")==0)             
+        continue;
+      if(has_R==1)
+      {
+        if(direntp->d_name[0]=='.')
+          continue;
+      }
+      struct stat info;
+      char temp[PATH_MAX];
+      sprintf(temp,"%s/%s",path,direntp->d_name);
+      if(stat(temp,&info)==-1)
+        perror(temp);
+      if(S_ISDIR(info.st_mode))//判断是否为目录，如果是目录就进入递归
+      {
+        ls_R(temp);
+      }
+      
+    }
+  }
 }
