@@ -14,12 +14,12 @@ void do_ls4(char[]);// ls
 void do_ls5(char[]);// ls -i
 void do_ls6(char[]);// ls -ial
 void ls_R(char path[]);//ls -R
-void dostat(char*);
-void show_file_info(char*,struct stat*);
+//void dostat(char*);
+//void show_file_info(char*,struct stat*);
 void mode_to_letters(int ,char[]);
 //用来适配ls -R
-void dostat2(char*,char*);
-void show_file_info2(char*,char*,struct stat*);
+void dostat(char*,char*);
+void show_file_info(char*,char*,struct stat*);
 char*uid_to_name(uid_t);
 char*gid_to_name(gid_t);
 void match(int argc,char*argv[]);
@@ -53,11 +53,14 @@ int has_aR=0;
 int has_Rl=0;
 int has_iR=0;
 int has_aRl=0;
+int has_r=0;
+int has_ar=0;
 //存放数组名的数组
 char *filenames[4096];		
 int file_cnt = 0;			//目录中文件个数
 int main(int argc,char* argv[])
 {
+  int*app=(int*)malloc(sizeof(int)*10);
    match(argc,argv);
   if(argc==1)
   {
@@ -65,47 +68,61 @@ int main(int argc,char* argv[])
   }
   else 
   {
+    char* name=".";
+     int i=0;
+     for(i=1;i<argc;i++)
+     {
+       if(argv[i][0]!='-')
+       {
+         name=argv[i];
+         break;
+       }
+     }
    // while(--argc)
    // {
-      if(has_a==1&&has_l!=1)
+      if(has_a==1&&has_l!=1||has_ar==1)
       {
-        do_ls3(".");
+        do_ls3(name);
+      }
+      else if(has_r==1)
+      {
+        do_ls2(name);
       }
       else if(has_a!=1&&has_l==1)
       {
-        do_ls(".");
+        do_ls(name);
       }
       else if(has_al==1)
       {
-        do_ls4(".");
+        do_ls4(name);
       }
       else if(has_i==1&&has_a!=1&&has_l!=1&&has_al!=1)
       {
-        do_ls5(".");
+        do_ls5(name);
       }
       else if(has_ial==1)
       {
-        do_ls4(".");
+        do_ls4(name);
       }
       else if(has_il==1)
       {
-        do_ls4(".");
+        do_ls4(name);
       }
       else if(has_ai==1)
       {
-        do_ls5(".");
+        do_ls5(name);
       }
       else if(has_aR==1)
       {
-        ls_R(".");
+        ls_R(name);
       }
       else if(has_R==1)
       {
-        ls_R(".");
+        ls_R(name);
       }
-      else if(has_aRl==1)
+      else if(has_aRl==1||has_Rl==1)
       {
-        ls_R(".");
+        ls_R(name);
       }
       else 
       {
@@ -137,7 +154,10 @@ void do_ls(char dirname[])
           {
                if(filenames[j][0]=='.')
                  continue;
-                 dostat(filenames[j]);
+                   char temp1[PATH_MAX];
+            sprintf(temp1,"%s/%s" ,dirname,filenames[j]);
+            dostat(temp1,filenames[j]);
+
           }
 
     closedir(dir_ptr);
@@ -167,7 +187,10 @@ void do_ls(char dirname[])
               if(filenames[j][0]=='.')
                 continue;
             }
-            dostat(filenames[j]);
+              char temp1[PATH_MAX];
+            sprintf(temp1,"%s/%s",dirname,filenames[j]);
+            dostat(temp1,filenames[j]);
+
          }
 
         closedir(dir_ptr);
@@ -192,7 +215,9 @@ void do_ls1(char dirname[])
        int j = 0;
        for(j = 0;j < file_cnt;++j)
        {
-              dostat(filenames[j]);
+                char temp1[PATH_MAX];
+            sprintf(temp1,"%s/%s",dirname,filenames[j]);
+            dostat(temp1,filenames[j]);
        }
         closedir(dir_ptr);
       }
@@ -217,6 +242,27 @@ void do_ls2(char dirname[])
     }
     sort(filenames,0,file_cnt-1);
     int j = 0;
+    if(has_r==1)
+    {
+      for(j=file_cnt-1;j>=0;--j)
+      {
+          if(filenames[j][0]=='.')
+          continue;
+        struct stat info;
+        if(stat(filenames[j],&info)==-1)
+          perror(filenames[j]);
+        int color=get_color(info);
+            printf_name(filenames[j],color);
+            i++;
+            if(i==4)
+            {
+              printf("\n");
+              i=0;
+            }
+      }
+      printf("\n");
+      return;
+    }
 		for(j = 0;j < file_cnt;++j)
     {
         if(filenames[j][0]=='.')
@@ -256,6 +302,26 @@ void do_ls3(char dirname[])
        }
        sort(filenames,0,file_cnt-1);
        int j = 0;
+       if(has_ar==1)
+       {
+          for(j = file_cnt-1;j >=0;--j)
+       {
+            struct stat info;
+           if(stat(filenames[j],&info)==-1)
+             perror(filenames[j]);
+           int color=get_color(info);
+           printf_name(filenames[j],color);
+    
+               i++;
+               if(i==4)
+               {
+                 printf("\n");
+                 i=0;
+               }
+        }
+				  printf("\n");
+				return;
+       }
        for(j = 0;j < file_cnt;++j)
        {
             struct stat info;
@@ -320,36 +386,7 @@ void do_ls5(char dirname[])
 
   }
 }
-void dostat(char*filename)
-{
-  struct stat info;
-  if(stat(filename,&info)==-1)
-    perror(filename);
-  else 
-    show_file_info(filename,&info);
-}
-void show_file_info(char*filename,struct stat*info_p)
-{
-  char*uid_to_name(),*ctime(),*git_to_name(),*filemode();
-  void mode_to_letters();
-  char modestr[11];
-      struct stat info;
-       if(stat(filename,&info)==-1)
-       perror(filename);
-       int color=get_color(info);
 
-  mode_to_letters(info_p->st_mode,modestr);
-  if(has_ial==1||has_il==1||has_aRl==1)
-  printf("%ul ",info_p->st_ino);
-  printf("%s ",modestr);
-  printf("%4d ",(int)info_p->st_nlink);
-  printf("%-8s ",uid_to_name(info_p->st_uid));
-  printf("%-8s ",gid_to_name(info_p->st_gid));
-  printf("%8ld ",(long)info_p->st_size);
-  printf("%.12s ",4+ctime(&info_p->st_ctim));
-  printf_name1(filename,color);
-  printf("\n");
-}
 void mode_to_letters(int mode,char str[])
 {
   strcpy(str,"----------");
@@ -369,15 +406,15 @@ void mode_to_letters(int mode,char str[])
   if(mode&S_IXOTH)str[9]='x';
 }
 //用来适配-R
-void dostat2(char*path,char*filename)
+void dostat(char*path,char*filename)
 {
   struct stat info;
   if(stat(path,&info)==-1)
     perror(path);
   else 
-    show_file_info2(path,filename,&info);
+    show_file_info(path,filename,&info);
 }
-void show_file_info2(char*path,char*filename,struct stat*info_p)
+void show_file_info(char*path,char*filename,struct stat*info_p)
 {
   char*uid_to_name(),*ctime(),*git_to_name(),*filemode();
   void mode_to_letters();
@@ -444,9 +481,17 @@ void match(int argc,char*argv[])
      has_a=0;
      has_l=0;
     }
+    if(strcmp(argv[i],"-r")==0)
+      has_r=1;
+		if(strcmp(argv[i],"-ra")==0||strcmp(argv[i],"-ar")==0||(has_a==1&&has_r==1))
+    {
+      has_ar=1;
+      has_a=0;
+      has_r=0;
+    }
     if(strcmp(argv[i],"-i")==0)
       has_i=1;
-    if(strcmp(argv[i],"-ail")==0||strcmp(argv[i],"-ial")==0||strcmp(argv[i],"-lia")==0||strcmp(argv[i],"-ali")==0||strcmp(argv[i],"ila")==0||strcmp(argv[i],"lai")==0||(has_a==1&&has_l==1&&has_i==1)||(has_il==1&&has_a==0)||(has_ai==1&&has_l==1))
+    if(strcmp(argv[i],"-ail")==0||strcmp(argv[i],"-ial")==0||strcmp(argv[i],"-lia")==0||strcmp(argv[i],"-ali")==0||strcmp(argv[i],"ila")==0||strcmp(argv[i],"lai")==0||(has_a==1&&has_l==1&&has_i==1)||(has_il==1&&has_a==1)||(has_ai==1&&has_l==1))
     {
       has_ial=1;
       has_i=0;
@@ -470,10 +515,10 @@ void match(int argc,char*argv[])
      if(strcmp(argv[i],"-aR")==0||strcmp(argv[i],"-Ra")==0||(has_a==1&&has_l==1))
     {
       has_aR=1;
-      has_R=1;
-      has_a=1;
+      has_R=0;
+      has_a=0;
     }
-    if(strcmp(argv[i],"-aRl")==0||strcmp(argv[i],"-alR")==0||strcmp(argv[i],"-laR")==0||strcmp(argv[i],"-lRa")==0||strcmp(argv[i],"Ral")==0||strcmp(argv[i],"Rla")==0||(has_a==1&&has_l==1&&has_R==1)||(has_aR==1&&has_l==0)||(has_Rl==1&&has_a==1)||(has_al==1&&has_R==1))
+    if(strcmp(argv[i],"-aRl")==0||strcmp(argv[i],"-alR")==0||strcmp(argv[i],"-laR")==0||strcmp(argv[i],"-lRa")==0||strcmp(argv[i],"-Ral")==0||strcmp(argv[i],"-Rla")==0||(has_a==1&&has_l==1&&has_R==1)||(has_aR==1&&has_l==1)||(has_Rl==1&&has_a==1)||(has_al==1&&has_R==1))
     {
       has_aRl=1;
       has_a=0;
@@ -655,14 +700,14 @@ void ls_R(char path[])
     int i=0;
     for(j=0;j<file_cnt;++j)
     {
-      if(has_aRl==1)
+      if(has_aRl==1||has_Rl==1)
       {
           char temp1[PATH_MAX];
          sprintf(temp1,"%s/%s",path,filenames[j]);
-         dostat2(temp1,filenames[j]);
+         dostat(temp1,filenames[j]);
          continue;
       }
-      if(filenames[j][0]=='.')
+      if(filenames[j][0]=='.'&&(has_aR!=1||has_aRl!=1))
         continue;
       struct stat info;
       char temp1[PATH_MAX];
