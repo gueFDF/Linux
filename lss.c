@@ -261,9 +261,9 @@ void do_ls2(char dirname[])
         {
           long long size=info.st_size/1024;                              
             if(size<=4)                                                    
-               printf("4 ");                                                
+               printf("4   ");                                                
             else                                                           
-               printf("%-lld ",size);   
+               printf("%-4lld",size);   
         }
             printf_name(filenames[j],color);
             i++;
@@ -288,9 +288,9 @@ void do_ls2(char dirname[])
           {                       
              long long size=info.st_size/1024;                              
                if(size<=4)           
-                  printf("4 ");                
+                  printf("4   ");                
                else         
-                  printf("%-lld ",size);                                                                                                                                                    
+                  printf("%-4lld",size);                                                                                                                                                    
            }                     
             printf_name(filenames[j],color);
             i++;
@@ -335,9 +335,9 @@ void do_ls3(char dirname[])
           {                       
              long long size=info.st_size/1024;                              
                if(size<=4)           
-                  printf("4 ");                
+                  printf("4   ");                
                else         
-                  printf("%-lld ",size);                                                                                                                                                    
+                  printf("%-4lld",size);                                                                                                                                                    
            }                     
            printf_name(filenames[j],color);
     
@@ -361,9 +361,9 @@ void do_ls3(char dirname[])
           {                       
              long long size=info.st_size/1024;                              
                if(size<=4)           
-                  printf("4 ");                
+                  printf("4   ");                
                else         
-                  printf("%-lld ",size);                                                                                                                                                    
+                  printf("%-4lld",size);                                                                                                                                                    
            }                        
            printf_name(filenames[j],color);
     
@@ -413,9 +413,9 @@ void do_ls5(char dirname[])
           {                       
              long long size=info.st_size/1024;                              
                if(size<=4)           
-                  printf("4 ");                
+                  printf("4   ");                
                else         
-                  printf("%-lld ",size);                                                                                                                                                    
+                  printf("%-4lld",size);                                                                                                                                                    
            }                     
                   printf_name(filenames[j],color);
                   i++;
@@ -586,6 +586,10 @@ void match(int argc,char*argv[])
        has_s=1;
      }
      if(strcmp(argv[i],"-as")==0||strcmp(argv[i],"-sa"))
+     {
+       has_s=1;
+       has_a=1;
+     }
 
   }
 }
@@ -777,9 +781,9 @@ void ls_R(char path[])
           {                       
              long long size=info.st_size/1024;                              
                if(size<=4)           
-                  printf("4 ");                
+                  printf("4   ");                
                else         
-                  printf("%-lld ",size);                                                                                                                                                    
+                  printf("%-4lld",size);                                                                                                                                                    
            }                     
       printf_name2(filenames[j],color);
     }
