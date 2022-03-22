@@ -14,8 +14,6 @@ void do_ls4(char[]);// ls
 void do_ls5(char[]);// ls -i
 void do_ls6(char[]);// ls -ial
 void ls_R(char path[]);//ls -R
-//void dostat(char*);
-//void show_file_info(char*,struct stat*);
 void mode_to_letters(int ,char[]);
 //用来适配ls -R
 void dostat(char*,char*);
