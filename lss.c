@@ -61,7 +61,6 @@ char *filenames[4096];
 int file_cnt = 0;			//目录中文件个数
 int main(int argc,char* argv[])
 {
-  int*app=(int*)malloc(sizeof(int)*10);
    match(argc,argv);
   if(argc==1)
   {
@@ -773,8 +772,7 @@ void ls_R(char path[])
       restored_ls(direntp);
     }
        sort(filenames,0,file_cnt-1);                          
-    int j=0;
-    int i=0;
+    int j=0;;
     for(j=0;j<file_cnt;++j)
     {
       if(has_aRl==1||has_Rl==1)
@@ -789,7 +787,7 @@ void ls_R(char path[])
       struct stat info;
       char temp1[PATH_MAX];
       sprintf(temp1,"%s/%s",path,filenames[j]);
-      if(stat(temp1,&info)==-1)
+      if(lstat(temp1,&info)==-1)
         perror(temp1);
       int color=get_color(info);
          if(has_s==1)
@@ -823,9 +821,13 @@ void ls_R(char path[])
       struct stat info;
       char temp[PATH_MAX];
       sprintf(temp,"%s/%s",path,direntp->d_name);
-      if(stat(temp,&info)==-1)
+      if(lstat(temp,&info)==-1)
         perror(temp);
-      if(S_ISDIR(info.st_mode))//判断是否为目录，如果是目录就进入递归
+      if(S_ISLNK(info.st_mode))
+          {
+            continue;
+          }
+      if(S_ISDIR(info.st_mode)&&(!S_ISLNK(info.st_mode)))//判断是否为目录，如果是目录就进入递归
       {
         ls_R(temp);
       }
