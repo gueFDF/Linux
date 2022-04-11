@@ -33,6 +33,8 @@ int isdo(char*argv[],int count);
 void mycd(char*argv[]);
 //输出重定向'>'
 void mydup(char*argv[]);
+//输出重定向'>>'
+void mydup2(char*argv[]);
 
 int main()
 {
@@ -81,6 +83,10 @@ void commodAnalsy(char*argv[],int number)
     {
       mydup(argv);
     }
+    else if(flag==4)
+    {
+      mydup2(argv);
+    }
     else if(flag==10) //需要子进程进行执行的第三方函数
     {
         pid_t pid=fork();
@@ -118,7 +124,29 @@ void mydup(char*argv[])
 {
     //出现 echo "adcbe" > test.c  这种情况
     int fdout=dup(1);//让标准输出获取一个新的文件描述符
-    int fd=open(argv[3],O_WRONLY|O_CREAT|O_TRUNC);
+    int fd=open(argv[3],O_WRONLY|O_CREAT|O_TRUNC); //只写模式|表示如果指定文件不存在，则创建这个文件|表示截断，如果文件存在，并且以只写、读写方式打开，则将其长度截断为0。
+    dup2(fd,1);
+    pid_t pid=fork();
+    if(pid<0)
+    {
+      perror("fork");
+      exit(1);
+    }
+    else if(pid==0)//子进程
+    {
+      execlp(argv[0],argv[0],argv[1],NULL);
+    }
+    else if(pid>0)
+    {
+      int*status;
+      wait(status);
+    }
+      dup2(fdout,1);//
+}
+void mydup2(char*argv[])
+{
+  int fdout=dup(1);//让标准输出获取一个新的文件描述符
+    int fd=open(argv[3],O_WRONLY|O_CREAT|O_APPEND); //只写模式|表示如果指定文件不存在，则创建这个文件|表示追加，如果原来文件里面有内容，则这次写入会写在文件的最末尾。
     dup2(fd,1);
     pid_t pid=fork();
     if(pid<0)
