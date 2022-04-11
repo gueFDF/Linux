@@ -116,8 +116,7 @@ void mycd(char*argv[])
 }
 void mydup(char*argv[])
 {
-  if(strcmp(argv[0],"echo")==0)  //出现 echo "adcbe" > test.c  这种情况
-  {
+    //出现 echo "adcbe" > test.c  这种情况
     int fdout=dup(1);//让标准输出获取一个新的文件描述符
     int fd=open(argv[3],O_WRONLY|O_CREAT|O_TRUNC);
     dup2(fd,1);
@@ -136,8 +135,7 @@ void mydup(char*argv[])
       int*status;
       wait(status);
     }
-      dup2(fdout,1);
-  }
+      dup2(fdout,1);//
 }
 void printpathto(ino_t this_inode)
 {
