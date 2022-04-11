@@ -7,6 +7,8 @@
 #include<unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include<wait.h>
+#include<fcntl.h>
 //定义颜色
 /*#define GREEN "\e[1;32m"
 #define BLUE "\e[1;34m"
@@ -20,16 +22,43 @@ void printpathto(ino_t);
 void inum_to_name(ino_t,char*,int );
 //上面三个函数就是pwd完整
 
+
+//打印前面那一段提示符
+void printname();
 #define MAX 128
+//解析参数
 void commodAnalsy(char*argv[],int number);
+int isdo(char*argv[],int count);
+//cd命令
+void mycd(char*argv[]);
+//输出重定向'>'
+void mydup(char*argv[]);
+
 int main()
 {
     char commod[MAX];
-    char *name1="gty@gty-Lenovo-Legion";
     while(1)
     {
         char*argv[MAX]={NULL};
         //打印提示符
+        printname();
+        commod[0]=0;
+        fgets(commod,MAX,stdin);
+        fflush(stdout);
+        commod[strlen(commod)-1]=0;
+        const char* mark=" ";//分割标识符,用strtok函数以空格为分割标识对字符串commod进行分割,将每个指令取出来.
+        int i=1;
+        argv[0]=strtok(commod,mark);
+        while(argv[i]=strtok(NULL,mark))
+        {
+            i++;
+        }
+        commodAnalsy(argv,i);
+    }
+}   
+void printname()
+{
+        char *name1="gty@gty-Lenovo-Legion";
         printf("\033[1m\033[32m%s\033[0m",name1);
         printf(":");
         printpathto(get_inode("."));
@@ -40,24 +69,76 @@ int main()
         memset(arr,0,sizeof(arr));//清空数组
         printf("$ ");
         fflush(stdout);//清空缓冲区,默认为行缓冲，提示符不是以\n结尾的
-        commod[0]=0;
-        fgets(commod,MAX,stdin);
-        fflush(stdout);
-        commod[strlen(commod)-1]='0';
-        const char* mark=" ";//分割标识符,用strtok函数以空格为分割标识对字符串commod进行分割,将每个指令取出来.
-        int i=1;
-        argv[0]=strtok(commod,mark);
-        while(argv[i]=strtok(NULL,mark))
-        {
-            i++;
-        }
-        //commodfAnalsy(argv,i);
-    }
-}   
-/*void commodAnalsy(char*argv[],int number)
+}
+void commodAnalsy(char*argv[],int number)
 {
-    if(argv[0]==)
-}*/
+    int flag=isdo(argv,number);
+    if(flag==1)
+    {
+      mycd(argv);
+    }
+    else if(flag==2)//输出重定向'>'
+    {
+      mydup(argv);
+    }
+    else if(flag==10) //需要子进程进行执行的第三方函数
+    {
+        pid_t pid=fork();
+      if(pid<0)
+      {
+        perror("fork");
+        exit(1);
+      }
+      else if(pid==0)//子进程
+      {
+        execvp(argv[0],argv);//执行命令
+        perror("commod");
+        exit(1);
+      }
+      else if(pid>0)//父进程
+      {
+        int*status;
+        wait(status);
+      }
+    }
+    
+}
+void mycd(char*argv[])
+{
+  if(argv[1])
+  {
+    chdir(argv[1]); 
+  }
+  else
+  {
+    chdir("/home/gty");
+  }
+}
+void mydup(char*argv[])
+{
+  if(strcmp(argv[0],"echo")==0)  //出现 echo "adcbe" > test.c  这种情况
+  {
+    int fdout=dup(1);//让标准输出获取一个新的文件描述符
+    int fd=open(argv[3],O_WRONLY|O_CREAT|O_TRUNC);
+    dup2(fd,1);
+    pid_t pid=fork();
+    if(pid<0)
+    {
+      perror("fork");
+      exit(1);
+    }
+    else if(pid==0)//子进程
+    {
+      execlp(argv[0],argv[0],argv[1],NULL);
+    }
+    else if(pid>0)
+    {
+      int*status;
+      wait(status);
+    }
+      dup2(fdout,1);
+  }
+}
 void printpathto(ino_t this_inode)
 {
   ino_t my_inode;
@@ -104,4 +185,28 @@ ino_t get_inode(char *fname)
     exit(1);
   }
   return info.st_ino;
+}
+int isdo(char*argv[],int count)
+{
+  int flag = 10,i;
+  if(argv[0]==NULL)
+  return 0;
+  if( strcmp( argv[0],"cd") == 0 ) 
+  {
+    flag = 1;
+  }
+  for( i = 0 ; i < count ; i++ ) 
+  {
+    if( strcmp(argv[i],">") == 0 )
+      flag = 2;
+    if( strcmp(argv[i],"|") == 0 )
+      flag = 3;
+    if( strcmp(argv[i],">>") == 0 )
+      flag = 4;
+       if( strcmp(argv[i],"<") == 0 )
+      flag = 5;
+       if( strcmp(argv[i],"<<") == 0 )
+      flag = 6;
+  }
+  return flag;
 }
