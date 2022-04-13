@@ -1,12 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
 #include<sys/types.h>
 #include<sys/stat.h>
 #include<dirent.h>
 #include<unistd.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+#include<signal.h> 
+#include<readline/readline.h>
+#include<readline/history.h>
 #include<wait.h>
 #include<fcntl.h>
 //定义颜色
@@ -41,6 +42,7 @@ void mydup3(char*argv[]);
 void mypipe(char*argv[],int count);
 int main()
 {
+   signal(SIGINT, SIG_IGN);
     char commod[MAX];
     while(1)
     {
