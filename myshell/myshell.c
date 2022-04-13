@@ -35,7 +35,10 @@ void mycd(char*argv[]);
 void mydup(char*argv[]);
 //输出重定向'>>'
 void mydup2(char*argv[]);
-
+//输入重定向'<'
+void mydup3(char*argv[]);
+//管道'|'
+void mypipe(char*argv[],int count);
 int main()
 {
     char commod[MAX];
@@ -83,13 +86,27 @@ void commodAnalsy(char*argv[],int number)
     {
       mydup(argv);
     }
+    else if(flag==3)//管道'|'
+    {
+      mypipe(argv,number);
+    }
     else if(flag==4)
     {
       mydup2(argv);
     }
+    else if(flag==5)
+    {
+      mydup3(argv);
+    }
     else if(flag==10) //需要子进程进行执行的第三方函数
     {
-        pid_t pid=fork();
+      if(strcmp(argv[0],"ll")==0)
+      {
+        strcpy(argv[0],"ls");
+        argv[number++]="-l";
+      }
+      argv[number++]="--color=auto";
+      pid_t pid=fork();
       if(pid<0)
       {
         perror("fork");
@@ -164,6 +181,101 @@ void mydup2(char*argv[])
       wait(status);
     }
       dup2(fdout,1);//
+}
+void mydup3(char*argv[])
+{
+   int fdin=dup(0);//让标准输出获取一个新的文件描述符
+   int fd=open(argv[3],O_RDONLY); //只读模式
+    dup2(fd,0);
+    pid_t pid=fork();
+    if(pid<0)
+    {
+      perror("fork");
+      exit(1);
+    }
+    else if(pid==0)//子进程
+    {
+      execlp(argv[0],argv[0],argv[2],NULL);
+    }
+    else if(pid>0)
+    {
+      int*status;
+      wait(status);
+    }
+      dup2(fdin,0);
+}
+void mypipe(char*argv[],int count)
+{
+  //先默认是单重管道
+  //int number=0;//记录管道数量
+  //for(int i=0;i<count;i++)
+  //{
+    //if(strcmp(argv[i],"|")==0)
+    //number++;
+  //}
+  
+    //存放管道两边的参数
+    char*str1[100]={NULL};
+    char*str2[100]={NULL};
+    int i=0;
+    int flag=0;
+    int p=0;
+    while(argv[i]!=NULL)
+    {
+      if(strcmp(argv[i],"|")==0)
+      {
+        i++;
+        flag=1;
+        str1[p]="--color=auto";
+        p=0;
+      }
+      else if(flag==0)
+      {
+        str1[p++]=argv[i++];
+      }
+      else if(flag==1)
+      {
+        str2[p++]=argv[i++];
+      }
+    }
+     str2[p]="--color=auto";
+
+    pid_t pid=fork();
+    if(pid<0)
+    {
+      perror("fork");
+      exit;
+    }
+    else if(pid==0)//子进程
+    {
+      int ret;
+      int fd[2];//存放文件句柄pipe
+      ret=pipe(fd);//建立管道
+
+      pid_t pid1=fork();
+      if(pid<0)
+      {
+        perror("fork");
+        exit;
+      }
+      else if(pid1>0)//子进程
+      {
+        close(fd[0]);//关闭读端
+        dup2(fd[1],1);
+        execvp(str1[0],str1);     
+      }
+      else if(pid1==0)
+      {
+        int fdin=dup(0);//保存标准输入
+        close(fd[1]);//关闭写端
+        dup2(fd[0],0);
+        execvp(str2[0],str2); 
+      }
+    }
+    else if(pid>0)
+    {
+      wait(NULL);
+    }
 }
 void printpathto(ino_t this_inode)
 {
