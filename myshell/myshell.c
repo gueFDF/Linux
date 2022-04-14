@@ -42,17 +42,18 @@ void mydup3(char*argv[]);
 void mypipe(char*argv[],int count);
 int main()
 {
-   signal(SIGINT, SIG_IGN);
-    char commod[MAX];
+    signal(SIGINT, SIG_IGN);
+    //char commod[MAX];
     while(1)
     {
         char*argv[MAX]={NULL};
         //打印提示符
         printname();
-        commod[0]=0;
-        fgets(commod,MAX,stdin);
+        //commod[0]=0;
+        //fgets(commod,MAX,stdin);
         fflush(stdout);
-        commod[strlen(commod)-1]=0;
+        char*commod=readline(" ");
+        //commod[strlen(commod)-1]=0;
         const char* mark=" ";//分割标识符,用strtok函数以空格为分割标识对字符串commod进行分割,将每个指令取出来.
         int i=1;
         argv[0]=strtok(commod,mark);
@@ -60,6 +61,12 @@ int main()
         {
             i++;
         }
+        if(commod==NULL)//屏蔽掉ctrl d 出现死循环的情况
+         {
+           printf("\n");
+           continue;
+         }
+       //  free(commod);
         commodAnalsy(argv,i);
     }
 }   
@@ -107,6 +114,7 @@ void commodAnalsy(char*argv[],int number)
         strcpy(argv[0],"ls");
         argv[number++]="-l";
       }
+      if(strcmp(argv[0],"ls")==0)
       argv[number++]="--color=auto";
       pid_t pid=fork();
       if(pid<0)
