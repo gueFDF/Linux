@@ -111,6 +111,12 @@ void commodAnalsy(char*argv[],int number)
     {
       ShowHistory();
     }
+    else if(strcmp(argv[0],"exit")==0)
+    {
+      printf("exit\n");
+      printf("有停止的任务\n");
+      exit(0);
+    }
     else if(flag==2)//输出重定向'>'
     {
       mydup(argv);
@@ -156,22 +162,43 @@ void commodAnalsy(char*argv[],int number)
     }
     
 }
+char strpwd[MAX];//用来存放上一次的路劲  实现 cd -
 void mycd(char*argv[])
 {
-  if(argv[1])
+  if(argv[1]==NULL)
+  return;
+  else if(strcmp(argv[1],"-")==0)
   {
-    chdir(argv[1]); 
+    char strpwd1[MAX];
+    getcwd(strpwd1,sizeof(strpwd));
+    chdir(strpwd);
+    printf("%s\n",strpwd);
+    strcpy(strpwd,strpwd1);
   }
-  else
+  else if(strcmp(argv[1],"~")==0)
   {
-    chdir("/home/gty");
+    getcwd(strpwd,sizeof(strpwd));
+    chdir("/home/gty"); 
+  }
+  else 
+  {
+    getcwd(strpwd,sizeof(strpwd));
+    chdir(argv[1]);
   }
 }
 void mydup(char*argv[])
 {
+    char* strc[MAX]={NULL};
+    int i=0;
+    while(strcmp(argv[i],">"))
+    {
+      strc[i]=argv[i];
+      i++;
+    }    
+    i++;
     //出现 echo "adcbe" > test.c  这种情况
     int fdout=dup(1);//让标准输出获取一个新的文件描述符
-    int fd=open(argv[3],O_WRONLY|O_CREAT|O_TRUNC); //只写模式|表示如果指定文件不存在，则创建这个文件|表示截断，如果文件存在，并且以只写、读写方式打开，则将其长度截断为0。
+    int fd=open(argv[i],O_WRONLY|O_CREAT|O_TRUNC); //只写模式|表示如果指定文件不存在，则创建这个文件|表示截断，如果文件存在，并且以只写、读写方式打开，则将其长度截断为0。
     dup2(fd,1);
     pid_t pid=fork();
     if(pid<0)
@@ -181,7 +208,7 @@ void mydup(char*argv[])
     }
     else if(pid==0)//子进程
     {
-      execlp(argv[0],argv[0],argv[1],NULL);
+      execvp(strc[0],strc);
     }
     else if(pid>0)
     {
@@ -192,8 +219,16 @@ void mydup(char*argv[])
 }
 void mydup2(char*argv[])
 {
-  int fdout=dup(1);//让标准输出获取一个新的文件描述符
-    int fd=open(argv[3],O_WRONLY|O_CREAT|O_APPEND); //只写模式|表示如果指定文件不存在，则创建这个文件|表示追加，如果原来文件里面有内容，则这次写入会写在文件的最末尾。
+   char* strc[MAX]={NULL};
+    int i=0;
+    while(strcmp(argv[i],">>"))
+    {
+      strc[i]=argv[i];
+      i++;
+    }    
+    i++;
+    int fdout=dup(1);//让标准输出获取一个新的文件描述符
+    int fd=open(argv[i],O_WRONLY|O_CREAT|O_APPEND); //只写模式|表示如果指定文件不存在，则创建这个文件|表示追加，如果原来文件里面有内容，则这次写入会写在文件的最末尾。
     dup2(fd,1);
     pid_t pid=fork();
     if(pid<0)
@@ -203,7 +238,7 @@ void mydup2(char*argv[])
     }
     else if(pid==0)//子进程
     {
-      execlp(argv[0],argv[0],argv[1],NULL);
+      execvp(strc[0],strc);
     }
     else if(pid>0)
     {
@@ -214,8 +249,16 @@ void mydup2(char*argv[])
 }
 void mydup3(char*argv[])
 {
+   char* strc[MAX]={NULL};
+    int i=0;
+    while(strcmp(argv[i],"<"))
+    {
+      strc[i]=argv[i];
+      i++;
+    }    
+    i++;
    int fdin=dup(0);//让标准输出获取一个新的文件描述符
-   int fd=open(argv[3],O_RDONLY); //只读模式
+   int fd=open(argv[i],O_RDONLY); //只读模式
     dup2(fd,0);
     pid_t pid=fork();
     if(pid<0)
@@ -225,7 +268,7 @@ void mydup3(char*argv[])
     }
     else if(pid==0)//子进程
     {
-      execlp(argv[0],argv[0],argv[2],NULL);
+      execvp(strc[0],strc);
     }
     else if(pid>0)
     {
