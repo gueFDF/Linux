@@ -10,12 +10,18 @@
 #include<readline/history.h>
 #include<wait.h>
 #include<fcntl.h>
+//读取命令使用记录，上一次运行的记录也会存在
+extern void add_history PARAMS((const char *)); //解决
+extern int read_history PARAMS((const char *));
+extern int write_history PARAMS((const char *));
+extern HIST_ENTRY **history_list PARAMS((void));//用来执行history命令的声明
 //定义颜色
 /*#define GREEN "\e[1;32m"
 #define BLUE "\e[1;34m"
 #define RED "\e[1;31m"
 #define WHITE "\e[0m"*/
-
+//# define RL_PROMPT_START_IGNORE '\001'
+//# define RL_PROMPT_END_IGNORE '\002'
 //mypwd系列函数的实现,用来打印路径
 char arr[1000];//用来保存路径
 ino_t get_inode(char*);
@@ -40,9 +46,12 @@ void mydup2(char*argv[]);
 void mydup3(char*argv[]);
 //管道'|'
 void mypipe(char*argv[],int count);
+void ShowHistory();
 int main()
 {
+    read_history(NULL);
     signal(SIGINT, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
     //char commod[MAX];
     while(1)
     {
@@ -53,6 +62,8 @@ int main()
         //fgets(commod,MAX,stdin);
         fflush(stdout);
         char*commod=readline(" ");
+        add_history(commod);
+        write_history(NULL);
         //commod[strlen(commod)-1]=0;
         const char* mark=" ";//分割标识符,用strtok函数以空格为分割标识对字符串commod进行分割,将每个指令取出来.
         int i=1;
@@ -61,13 +72,18 @@ int main()
         {
             i++;
         }
+        if(argv[0]==NULL)
+        {
+          continue;
+        }
         if(commod==NULL)//屏蔽掉ctrl d 出现死循环的情况
          {
-           printf("\n");
+          // printf("\n");
            continue;
          }
-       //  free(commod);
+        // free(commod);
         commodAnalsy(argv,i);
+        //free(commod);
     }
 }   
 void printname()
@@ -90,6 +106,10 @@ void commodAnalsy(char*argv[],int number)
     if(flag==1)
     {
       mycd(argv);
+    }
+    else if(strcmp(argv[0],"history")==0)
+    {
+      ShowHistory();
     }
     else if(flag==2)//输出重定向'>'
     {
@@ -248,7 +268,7 @@ void mypipe(char*argv[],int count)
         str2[p++]=argv[i++];
       }
     }
-     str2[p]="--color=auto";
+     //str2[p]="--color=auto";
 
     pid_t pid=fork();
     if(pid<0)
@@ -357,4 +377,12 @@ int isdo(char*argv[],int count)
       flag = 6;
   }
   return flag;
+}
+void ShowHistory()
+{
+  int i=0;
+  HIST_ENTRY**his;
+  his=history_list();
+  while(his[i]!=NULL)
+  printf("%-3d   %s\n",i ,his[i++]->line);
 }
