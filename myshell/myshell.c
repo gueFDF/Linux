@@ -20,8 +20,8 @@ extern HIST_ENTRY **history_list PARAMS((void));//用来执行history命令的�
 #define BLUE "\e[1;34m"
 #define RED "\e[1;31m"
 #define WHITE "\e[0m"*/
-//# define RL_PROMPT_START_IGNORE '\001'
-//# define RL_PROMPT_END_IGNORE '\002'
+# define RL_PROMPT_START_IGNORE '\001'
+# define RL_PROMPT_END_IGNORE '\002'
 //mypwd系列函数的实现,用来打印路径
 char arr[1000];//用来保存路径
 ino_t get_inode(char*);
@@ -62,9 +62,19 @@ int main()
         //fgets(commod,MAX,stdin);
         fflush(stdout);
         char*commod=readline(" ");
+        if(commod==NULL)//屏蔽掉ctrl d 出现死循环的情况
+         {
+          printf("\n");
+           continue;
+         } 
         add_history(commod);
         write_history(NULL);
         //commod[strlen(commod)-1]=0;
+        if(strlen(commod)==0)//屏蔽掉ctrl d 出现死循环的情况
+         {
+          // printf("\n");
+           continue;
+         }
         const char* mark=" ";//分割标识符,用strtok函数以空格为分割标识对字符串commod进行分割,将每个指令取出来.
         int i=1;
         argv[0]=strtok(commod,mark);
@@ -72,15 +82,6 @@ int main()
         {
             i++;
         }
-        if(argv[0]==NULL)
-        {
-          continue;
-        }
-        if(commod==NULL)//屏蔽掉ctrl d 出现死循环的情况
-         {
-          // printf("\n");
-           continue;
-         }
         // free(commod);
         commodAnalsy(argv,i);
         //free(commod);
@@ -166,7 +167,10 @@ char strpwd[MAX];//用来存放上一次的路劲  实现 cd -
 void mycd(char*argv[])
 {
   if(argv[1]==NULL)
-  return;
+  {
+    getcwd(strpwd,sizeof(strpwd));
+    chdir("/home");
+  }
   else if(strcmp(argv[1],"-")==0)
   {
     char strpwd1[MAX];
