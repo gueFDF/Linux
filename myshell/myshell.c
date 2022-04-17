@@ -14,6 +14,12 @@
 extern void add_history PARAMS((const char *)); //解决
 extern int read_history PARAMS((const char *));
 extern int write_history PARAMS((const char *));
+extern HIST_ENTRY **history_list PARAMS((void));//用来执行history命令的声明
+
+//读取命令使用记录，上一次运行的记录也会存在
+extern void add_history PARAMS((const char *)); //解决
+extern int read_history PARAMS((const char *));
+extern int write_history PARAMS((const char *));
 extern HIST_ENTRY **history_list PARAMS((void)); //用来执行history命令的声明
 //定义颜色
 /*#define GREEN "\e[1;32m"
@@ -350,166 +356,119 @@ void mypipe(char *argv[], int count)
     waitpid(pid, NULL, 0);
   }
 }
-/*void callCommandwithRedi(char*argv[],int left,int right)
+void callCommandWithPipe(char *argv[], int count)
 {
-  char*ppt[MAX]={NULL};
-  printf("%d\n",right);
-  for(int i=left,t=0;i<right;i++,t++)
+  int ret[10];//存放每个管道的下标
+  int number=0;//统计管道个数
+  for(int i=0;i<count;i++)
   {
-    ppt[t]=argv[i];
-    printf("%s\n",ppt[t]);
+    if(!strcmp(argv[i],"|"))
+    {
+      ret[number++]=i;
+    }
   }
-  pid_t pid=fork();
-  if(pid<0)
+  int cmd_count=number+1;//命令个数
+  char* cmd[cmd_count][10];
+  for(int i=0;i<cmd_count;i++)//将命令以管道分割存放组数组里
   {
-    perror("fork");
-    exit(1);
+    if(i==0)//第一个命令
+    {
+      int n=0;
+      for(int j=0;j<ret[i];j++)
+      {
+        cmd[i][n++]=argv[j];
+      }
+      cmd[i][n]=NULL;
+    }
+    else if(i==number)//最后一个命令
+    {
+      int n=0;
+      for(int j=ret[i-1]+1;j<count;j++)
+      {
+        cmd[i][n++]=argv[j];
+      }
+      cmd[i][n]=NULL;
+    }
+    else 
+    {
+       int n=0;
+      for(int j=ret[i-1]+1;j<ret[i];j++)
+      {
+        cmd[i][n++]=argv[j];
+      }
+      cmd[i][n]=NULL;
+    }
+  }//经过上述操作，我们已经将指令以管道为分隔符分好,下面我们就可以创建管道了
+  int fd[number][2];  //存放管道的描述符
+  pid_t pid;
+  for(int i=0;i<number;i++)//循环创建多个管道
+  {
+    pipe(fd[i]);
   }
-  else if(pid==0)  //子进程
+  int i=0;
+  for(i=0;i<cmd_count;i++)//父进程循环创建多个并列子进程
   {
-    execvp(ppt[0],ppt);
+    pid=fork();
+    if(pid==0)//子进程直接退出循环，不参与进程的创建
+    break;
+  }
+  if(pid==0)//子进程
+  {
+    if(number)
+    {
+      if(i==0)//第一个子进程
+      {
+        dup2(fd[0][1],1);//绑定写端`  
+        close(fd[0][0]);//关闭读端
+        //其他进程读写端全部关闭
+        for(int j=1;j<number;j++)
+        {
+          close(fd[j][1]);
+          close(fd[j][0]);
+        }
+      }
+      else if(i==number)//最后一个进程
+      {
+        dup2(fd[i-1][0],0);//打开读端
+        close(fd[i-1][1]);//关闭写端
+         //其他进程读写端全部关闭
+        for(int j=0;j<number-1;j++)
+        {
+          close(fd[j][1]);
+          close(fd[j][0]);
+        }
+      }
+      else //中间进程
+      {
+        dup2(fd[i-1][0],0);//前一个管道的读端打开
+        close(fd[i-1][1]);//前一个写端关闭
+        dup2(fd[i][1],1);//后一个管道的写端打开
+        close(fd[i][0]);//后一个读端关闭
+        //其他的全部关闭
+        for(int j=0;j<number;j++)
+        {
+             if(j!=i&&j!=(i-1))
+             {
+               close(fd[j][0]);
+               close(fd[j][1]);
+             }
+        }
+      }
+    }
+
+    execvp(cmd[i][0],cmd[i]);//执行命令
     perror("execvp");
     exit(1);
   }
-  else
-  {
-    waitpid(pid ,NULL,0);
-  }
-}*/
-void callCommandWithPipe(char *argv[], int count)
-{
- // mkfifo("mytestfifo1.txt", 0664);
- // mkfifo("mytestfifo2.txt", 0664);
-  int fd2 = open("mytestfifo2", O_RDWR|O_CREAT,S_IRWXU|S_IRWXG);
-  int fd1 = open("mytestfifo1", O_RDWR|O_CREAT,S_IRWXU|S_IRWXG);
-  int n = 0;
-  int arr[MAX]; //存放管道下标
-  for (int i = 0; i < count; i++)
-  {
-    if (!strcmp(argv[i], "|")) //统计管道下标
+  //父进程什么都不干，把管道的所有口都关掉
+    for(i=0;i<number;i++)
     {
-      arr[n++] = i;
-    }
-  }
-  int flag = 0;
-  for (int i = 0; i < n; i++)
-  {
-    int t;
-    char *ret[MAX] = {NULL};
-    if (i == 0)
-    {
-      t = 0;
-    }
-    else
-    {
-      t = arr[i - 1] + 1;
-    }
-    int a = 0;
-    for (int p = t; p < arr[i]; p++) //将管道前的参数存在数组里
-    {
-      ret[a++] = argv[t++];
-    }
-    if (flag == 0) //第一个管道
-    {
-      flag = 1;
-      // close(fd[0]);
-      pid_t pid = fork();
-      if (pid == 0) //子进程
-      {
-        dup2(fd1, 1);
-        execvp(ret[0], ret);
-        exit(1);
-      }
-      else
-      {
-        waitpid(pid, NULL, 0);
-      }
-    }
-    else if (flag == 1)
-    {
-      flag = 2;
-      pid_t pid = fork();
-      if (pid == 0)
-      {
-        dup2(fd1, 0);
-        dup2(fd2, 1);
-        execvp(ret[0], ret);
-        exit(1);
-      }
-      else
-      {
-        waitpid(pid, NULL, 0);
-      }
-    }
-    else if (flag == 2)
-    {
-      flag = 1;
-      pid_t pid = fork();
-      if (pid == 0)
-      {
-        dup2(fd1, 1);
-        dup2(fd2, 0);
-        execvp(ret[0], ret);
-        exit(1);
-      }
-      else
-      {
-        waitpid(pid, NULL, 0);
-      }
-    }
-    /* else
-     {
-       pid_t pid =fork();
-       if(pid==0)
-       {
-         if(pid==1)
-         {
-           dup2(fd1,0);
-           execvp(ret[0],ret);
-         }
-         else
-         {
-           dup2(fd2,0);
-           execvp(ret[0],ret);
-         }
-       }
-       else
-       {
-         waitpid(pid,NULL,0);
-       }
+        close(fd[i][0]);
+        close(fd[i][1]);//父进程端口全部关掉
 
-     }
-     */
-  }
-  char *add[MAX];
-  int j = 0;
-  for (int i = arr[n - 1] + 1; i < count; i++)
-  {
-    add[j++] = argv[i];
-  }
-  pid_t pid = fork();
-  if (pid == 0)
-  {
-    if (flag == 1)
-    {
-      dup2(fd1, 0);
-      execvp(add[0], add);
-      exit(1);
     }
-    else
-    {
-      dup2(fd2, 0);
-      execvp(add[0], add);
-      exit(1);
-    }
-  }
-  else
-  {
-    waitpid(pid, NULL, 0);
-  }
-
-  close(fd1);
-  close(fd2);
+  for(int j=0;j<cmd_count;j++)//父进程等待子进程
+  wait(NULL);
 }
 
 
