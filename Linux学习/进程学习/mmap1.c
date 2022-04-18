@@ -5,18 +5,23 @@
 #include<sys/mman.h>
 #include<sys/types.h>
 #include<unistd.h>
+#include<string.h>
 int var=100;
 int main()
 {
-    int *p;
+    char *p;
     pid_t pid;
     int fd;
     fd=open("temp",O_RDWR|O_CREAT|O_TRUNC,0644);
     if(fd<0)
     {
-    lseek(fd,SEEK_END,20);
-    write(fd,'a',1);
-    p=(int*)mmap(NULL,20,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);//创建映射区
+        perror("open error");
+        exit(1);
+    }
+    lseek(fd,20,SEEK_END);
+    write(fd,"\0",1);
+    int len =lseek(fd,0,SEEK_END);//获取文件大小
+    p=(char*)mmap(NULL,20,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);//创建映射区
     pid=fork();
     if(pid<0)
     {
@@ -25,11 +30,12 @@ int main()
     }
     else if(pid>0)//父进程
     {
-        p="abcdef";
+        strcpy(p,"hello world");
     }
     else //子进程
     {
         printf("%s\n",p);
     }
+    int ret=munmap(p,len);//释放映射区
     return 0;
 }
