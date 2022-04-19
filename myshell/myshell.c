@@ -15,26 +15,9 @@ extern void add_history PARAMS((const char *)); //解决
 extern int read_history PARAMS((const char *));
 extern int write_history PARAMS((const char *));
 extern HIST_ENTRY **history_list PARAMS((void));//用来执行history命令的声明
-
-//读取命令使用记录，上一次运行的记录也会存在
-extern void add_history PARAMS((const char *)); //解决
-extern int read_history PARAMS((const char *));
-extern int write_history PARAMS((const char *));
-extern HIST_ENTRY **history_list PARAMS((void)); //用来执行history命令的声明
-//定义颜色
-/*#define GREEN "\e[1;32m"
-#define BLUE "\e[1;34m"
-#define RED "\e[1;31m"
-#define WHITE "\e[0m"*/
 #define RL_PROMPT_START_IGNORE '\001'
 #define RL_PROMPT_END_IGNORE '\002'
-// mypwd系列函数的实现,用来打印路径
 char arr[1000]; //用来保存路径
-ino_t get_inode(char *);
-void printpathto(ino_t);
-void inum_to_name(ino_t, char *, int);
-//上面三个函数就是pwd完整
-
 //打印前面那一段提示符
 void printname();
 #define MAX 128
@@ -54,7 +37,7 @@ void mypipe(char *argv[], int count);
 //实现多重管道'|'
 void callCommandWithPipe(char *argv[], int count);
 void callCommandwithRedi(char *argv[], int left, int right);
-
+int pass=0;//标记是否有&
 void ShowHistory();
 int main()
 {
@@ -69,7 +52,7 @@ int main()
     printname();
     // commod[0]=0;
     // fgets(commod,MAX,stdin);
-    fflush(stdout);
+    //fflush(stdout);
     char *commod = readline(" ");
     if (commod == NULL) //屏蔽掉ctrl d 出现死循环的情况
     {
@@ -93,7 +76,7 @@ int main()
     }
     // free(commod);
     commodAnalsy(argv, i);
-    // free(commod);
+     free(commod);
   }
 }
 void printname()
@@ -101,18 +84,18 @@ void printname()
   char *name1 = "gty@gty-Lenovo-Legion";
   printf("\033[1m\033[32m%s\033[0m", name1);
   printf(":");
-  printpathto(get_inode("."));
+  getcwd(arr,sizeof(arr));
   printf("\033[1m\033[34m%s\033[0m", arr);
-  char arr2[1000] = {0};
-  sprintf(arr2, "%s%s", "/home", arr);
-  chdir(arr2);
-  memset(arr, 0, sizeof(arr)); //清空数组
   printf("$ ");
   fflush(stdout); //清空缓冲区,默认为行缓冲，提示符不是以\n结尾的
 }
 void commodAnalsy(char *argv[], int number)
 {
   int flag = isdo(argv, number);
+  if(pass==1)
+  {
+    number--;
+  }
   if (flag == 1)
   {
     mycd(argv);
@@ -166,6 +149,12 @@ void commodAnalsy(char *argv[], int number)
     }
     else if (pid > 0) //父进程
     {
+      if(pass==1)
+      {
+        pass=0;
+        printf("%d\n",pid);
+        return;
+      }
       waitpid(pid, NULL, 0);
     }
   }
@@ -208,9 +197,8 @@ void mydup(char *argv[])
   }
   i++;
   //出现 echo "adcbe" > test.c  这种情况
-  int fdout = dup(1);                                   //让标准输出获取一个新的文件描述符
+ // int fdout = dup(1);                                   //让标准输出获取一个新的文件描述符
   int fd = open(argv[i], O_WRONLY | O_CREAT | O_TRUNC); //只写模式|表示如果指定文件不存在，则创建这个文件|表示截断，如果文件存在，并且以只写、读写方式打开，则将其长度截断为0。
-  dup2(fd, 1);
   pid_t pid = fork();
   if (pid < 0)
   {
@@ -219,13 +207,20 @@ void mydup(char *argv[])
   }
   else if (pid == 0) //子进程
   {
+     dup2(fd, 1);
     execvp(strc[0], strc);
   }
   else if (pid > 0)
   {
+     if(pass==1)
+      {
+        pass=0;
+        printf("%d\n",pid);
+        return;
+      }
     waitpid(pid, NULL, 0);
   }
-  dup2(fdout, 1); //
+  //dup2(fdout, 1); //
 }
 void mydup2(char *argv[])
 {
@@ -237,9 +232,8 @@ void mydup2(char *argv[])
     i++;
   }
   i++;
-  int fdout = dup(1);                                    //让标准输出获取一个新的文件描述符
+ // int fdout = dup(1);                                    //让标准输出获取一个新的文件描述符
   int fd = open(argv[i], O_WRONLY | O_CREAT | O_APPEND); //只写模式|表示如果指定文件不存在，则创建这个文件|表示追加，如果原来文件里面有内容，则这次写入会写在文件的最末尾。
-  dup2(fd, 1);
   pid_t pid = fork();
   if (pid < 0)
   {
@@ -248,13 +242,20 @@ void mydup2(char *argv[])
   }
   else if (pid == 0) //子进程
   {
+     dup2(fd, 1);
     execvp(strc[0], strc);
   }
   else if (pid > 0)
   {
+     if(pass==1)
+      {
+        pass=0;
+        printf("%d\n",pid);
+        return;
+      }
     waitpid(pid, NULL, 0);
   }
-  dup2(fdout, 1); //
+  //dup2(fdout, 1); //
 }
 void mydup3(char *argv[])
 {
@@ -266,12 +267,18 @@ void mydup3(char *argv[])
     i++;
   }
   i++;
-  int fdin = dup(0);                //让标准输出获取一个新的文件描述符
+ // int fdin = dup(0);                //让标准输出获取一个新的文件描述符
   int fd = open(argv[i], O_RDONLY); //只读模式
-  dup2(fd, 0);
   pid_t pid = fork();
   if (pid < 0)
   {
+     dup2(fd, 0);
+     if(pass==1)
+      {
+        pass=0;
+        printf("%d\n",pid);
+        return;
+      }
     perror("fork");
     exit(1);
   }
@@ -283,81 +290,11 @@ void mydup3(char *argv[])
   {
     waitpid(pid, NULL, 0);
   }
-  dup2(fdin, 0);
-}
-void mypipe(char *argv[], int count)
-{
-  //先默认是单重管道
-  // int number=0;//记录管道数量
-  // for(int i=0;i<count;i++)
-  //{
-  // if(strcmp(argv[i],"|")==0)
-  // number++;
-  //}
-
-  //存放管道两边的参数
-  char *str1[100] = {NULL};
-  char *str2[100] = {NULL};
-  int i = 0;
-  int flag = 0;
-  int p = 0;
-  while (argv[i] != NULL)
-  {
-    if (strcmp(argv[i], "|") == 0)
-    {
-      i++;
-      flag = 1;
-      str1[p] = "--color=auto";
-      p = 0;
-    }
-    else if (flag == 0)
-    {
-      str1[p++] = argv[i++];
-    }
-    else if (flag == 1)
-    {
-      str2[p++] = argv[i++];
-    }
-  }
-  // str2[p]="--color=auto";
-  pid_t pid = fork();
-  if (pid < 0)
-  {
-    perror("fork");
-    exit;
-  }
-  else if (pid == 0) //子进程
-  {
-    int ret;
-    int fd[2];      //存放文件句柄pipe
-    ret = pipe(fd); //建立管道
-    pid_t pid1 = fork();
-    if (pid < 0)
-    {
-      perror("fork");
-      exit;
-    }
-    else if (pid1 > 0) //子进程
-    {
-      close(fd[0]); //关闭读端
-      dup2(fd[1], 1);
-      execvp(str1[0], str1);
-    }
-    else if (pid1 == 0)
-    {
-      int fdin = dup(0); //保存标准输入
-      close(fd[1]);      //关闭写端
-      dup2(fd[0], 0);
-      execvp(str2[0], str2);
-    }
-  }
-  else if (pid > 0)
-  {
-    waitpid(pid, NULL, 0);
-  }
+  //dup2(fdin, 0);
 }
 void callCommandWithPipe(char *argv[], int count)
 {
+   pid_t pid;
   int ret[10];//存放每个管道的下标
   int number=0;//统计管道个数
   for(int i=0;i<count;i++)
@@ -400,7 +337,6 @@ void callCommandWithPipe(char *argv[], int count)
     }
   }//经过上述操作，我们已经将指令以管道为分隔符分好,下面我们就可以创建管道了
   int fd[number][2];  //存放管道的描述符
-  pid_t pid;
   for(int i=0;i<number;i++)//循环创建多个管道
   {
     pipe(fd[i]);
@@ -467,58 +403,16 @@ void callCommandWithPipe(char *argv[], int count)
         close(fd[i][1]);//父进程端口全部关掉
 
     }
+     if(pass==1)
+      {
+        pass=0;
+        printf("%d\n",pid);
+        return;
+      }
   for(int j=0;j<cmd_count;j++)//父进程等待子进程
   wait(NULL);
 }
 
-
-void printpathto(ino_t this_inode)
-{
-  ino_t my_inode;
-  char its_name[BUFSIZ];
-  if (get_inode("..") != this_inode)
-  {
-    chdir("..");
-    inum_to_name(this_inode, its_name, BUFSIZ);
-    my_inode = get_inode(".");
-    printpathto(my_inode);
-    arr[strlen(arr)] = '/';
-    strcat(arr, its_name);
-    // printf("\033[1m\033[34m/%s\033[0m", its_name);
-  }
-}
-void inum_to_name(ino_t inode_to_find, char *namebuf, int buflen)
-{
-  DIR *dir_ptr;
-  struct dirent *direntp;
-  dir_ptr = opendir(".");
-  if (dir_ptr == NULL)
-  {
-    perror(".");
-    exit(1);
-  }
-  while ((direntp = readdir(dir_ptr)) != NULL)
-    if (direntp->d_ino == inode_to_find)
-    {
-      strncpy(namebuf, direntp->d_name, buflen);
-      namebuf[buflen - 1] = '\0';
-      closedir(dir_ptr);
-      return;
-    }
-  fprintf(stderr, "error looking for inum %ld\n", inode_to_find);
-  exit(1);
-}
-ino_t get_inode(char *fname)
-{
-  struct stat info;
-  if (stat(fname, &info) == -1)
-  {
-    fprintf(stderr, "Cannot stat");
-    perror(fname);
-    exit(1);
-  }
-  return info.st_ino;
-}
 int isdo(char *argv[], int count)
 {
   int flag = 10, i;
@@ -540,6 +434,11 @@ int isdo(char *argv[], int count)
       flag = 5;
     if (strcmp(argv[i], "<<") == 0)
       flag = 6;
+    if (strcmp(argv[i], "&") == 0)
+    {
+        pass = 1;
+        argv[i]=NULL;
+    }
   }
   return flag;
 }
