@@ -10,13 +10,6 @@
 #include <readline/history.h>
 #include <wait.h>
 #include <fcntl.h>
-//读取命令使用记录，上一次运行的记录也会存在
-extern void add_history PARAMS((const char *)); //解决
-extern int read_history PARAMS((const char *));
-extern int write_history PARAMS((const char *));
-extern HIST_ENTRY **history_list PARAMS((void));//用来执行history命令的声明
-#define RL_PROMPT_START_IGNORE '\001'
-#define RL_PROMPT_END_IGNORE '\002'
 char arr[1000]; //用来保存路径
 //打印前面那一段提示符
 void printname();
@@ -36,15 +29,13 @@ void mydup3(char *argv[]);
 void mypipe(char *argv[], int count);
 //实现多重管道'|'
 void callCommandWithPipe(char *argv[], int count);
-void callCommandwithRedi(char *argv[], int left, int right);
 int pass=0;//标记是否有&
 void ShowHistory();
+void singfunc();//屏蔽SIGINT信号
 int main()
 {
   read_history(NULL);
-  signal(SIGINT, SIG_IGN);
-  signal(SIGHUP, SIG_IGN);
-  // char commod[MAX];
+  singfunc();
   while (1)
   {
     char *argv[MAX] = {NULL};
@@ -67,6 +58,7 @@ int main()
       // printf("\n");
       continue;
     }
+
     const char *mark = " "; //分割标识符,用strtok函数以空格为分割标识对字符串commod进行分割,将每个指令取出来.
     int i = 1;
     argv[0] = strtok(commod, mark);
@@ -200,7 +192,7 @@ void mydup(char *argv[])
   i++;
   //出现 echo "adcbe" > test.c  这种情况
   int fdout = dup(1);                                   //让标准输出获取一个新的文件描述符
-  int fd = open(argv[i], O_WRONLY | O_CREAT | O_TRUNC); //只写模式|表示如果指定文件不存在，则创建这个文件|表示截断，如果文件存在，并且以只写、读写方式打开，则将其长度截断为0。
+  int fd = open(argv[i], O_WRONLY | O_CREAT | O_TRUNC,0666); //只写模式|表示如果指定文件不存在，则创建这个文件|表示截断，如果文件存在，并且以只写、读写方式打开，则将其长度截断为0。
   dup2(fd, 1);
   pid_t pid = fork();
   if (pid < 0)
@@ -244,7 +236,7 @@ void mydup2(char *argv[])
   int flag =isdo(argv, number);
   i++;
   int fdout = dup(1);                                    //让标准输出获取一个新的文件描述符
-  int fd = open(argv[i], O_WRONLY | O_CREAT | O_APPEND); //只写模式|表示如果指定文件不存在，则创建这个文件|表示追加，如果原来文件里面有内容，则这次写入会写在文件的最末尾。
+  int fd = open(argv[i], O_WRONLY | O_CREAT | O_APPEND,0666); //只写模式|表示如果指定文件不存在，则创建这个文件|表示追加，如果原来文件里面有内容，则这次写入会写在文件的最末尾。
   pid_t pid = fork();
    dup2(fd, 1);
   if (pid < 0)
@@ -286,7 +278,7 @@ void mydup3(char *argv[])
   int number=i;//重定向前面参数的个数
   int flag =isdo(argv, number);
   int fdin = dup(0);                //让标准输出获取一个新的文件描述符
-  int fd = open(argv[i], O_RDONLY); //只读模式
+  int fd = open(argv[i], O_RDONLY,0666); //只读模式
    dup2(fd, 0);
   pid_t pid = fork();
   if (pid < 0)
@@ -472,4 +464,11 @@ void ShowHistory()
   his = history_list();
   while (his[i] != NULL)
     printf("%-3d   %s\n", i, his[i++]->line);
+}
+void singfunc()
+{
+  sigset_t set,oldset;
+  sigemptyset(&set);
+  sigaddset(&set,SIGINT);
+  sigprocmask(SIG_BLOCK,&set,&oldset);
 }
