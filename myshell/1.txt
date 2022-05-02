@@ -1,0 +1,14 @@
+ABCDEF
+1.txt
+myshell
+myshell.c
+test2.c
+zw
+test
+test2
+test1.c
+test1
+"aaaaas"
+2
+0
+hello word
