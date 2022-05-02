@@ -55,12 +55,12 @@ int has_iR=0;
 int has_aRl=0;
 int has_r=0;
 int has_ar=0;
+int has_s=0;
 //存放数组名的数组
 char *filenames[4096];		
 int file_cnt = 0;			//目录中文件个数
 int main(int argc,char* argv[])
 {
-  int*app=(int*)malloc(sizeof(int)*10);
    match(argc,argv);
   if(argc==1)
   {
@@ -124,10 +124,14 @@ int main(int argc,char* argv[])
       {
         ls_R(name);
       }
+      else if(has_s==1)
+      {
+        do_ls2(name);
+      }
       else 
       {
          printf("%s:\n",*++argv);
-         do_ls(*argv);
+         do_ls2(*argv);
       }
  //  }
   }
@@ -252,6 +256,14 @@ void do_ls2(char dirname[])
         if(stat(filenames[j],&info)==-1)
           perror(filenames[j]);
         int color=get_color(info);
+           if(has_s==1)
+          {                       
+             long long size=info.st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
             printf_name(filenames[j],color);
             i++;
             if(i==4)
@@ -271,6 +283,14 @@ void do_ls2(char dirname[])
         if(stat(filenames[j],&info)==-1)
           perror(filenames[j]);
         int color=get_color(info);
+           if(has_s==1)
+          {                       
+             long long size=info.st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
             printf_name(filenames[j],color);
             i++;
             if(i==4)
@@ -310,6 +330,14 @@ void do_ls3(char dirname[])
            if(stat(filenames[j],&info)==-1)
              perror(filenames[j]);
            int color=get_color(info);
+              if(has_s==1)
+          {                       
+             long long size=info.st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
            printf_name(filenames[j],color);
     
                i++;
@@ -328,6 +356,14 @@ void do_ls3(char dirname[])
            if(stat(filenames[j],&info)==-1)
              perror(filenames[j]);
            int color=get_color(info);
+              if(has_s==1)
+          {                       
+             long long size=info.st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
            printf_name(filenames[j],color);
     
                i++;
@@ -372,6 +408,14 @@ void do_ls5(char dirname[])
                   perror(filenames[j]);
                   printf("%d  ",info.st_ino); 
                  int color=get_color(info);
+                    if(has_s==1)
+          {                       
+             long long size=info.st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
                   printf_name(filenames[j],color);
                   i++;
                   if(i==4)
@@ -423,6 +467,14 @@ void show_file_info(char*path,char*filename,struct stat*info_p)
        if(stat(path,&info)==-1)
        perror(path);
        int color=get_color(info);
+          if(has_s==1)
+          {                       
+             long long size=info_p->st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
   mode_to_letters(info_p->st_mode,modestr);
   if(has_ial==1||has_il==1)
   printf("%ul ",info_p->st_ino);
@@ -527,6 +579,30 @@ void match(int argc,char*argv[])
       has_aR=0;
       has_Rl=0;
       has_al=0;
+    }
+    if(strcmp(argv[i],"-s")==0)
+    {
+      has_s=1;
+    }
+    if(strcmp(argv[i],"-as")==0||strcmp(argv[i],"-sa")==0)
+   {
+      has_a=1;
+      has_s=1;
+   }
+    if(strcmp(argv[i],"-Rs")==0||strcmp(argv[i],"-sR")==0)
+    {
+      has_R=1;
+      has_s=1;
+    }
+    if(strcmp(argv[i],"-ls")==0||strcmp(argv[i],"-sl")==0)
+    {
+      has_s=1;
+      has_l=1;
+    }
+    if(strcmp(argv[i],"-Rs")==0||strcmp(argv[i],"-sR")==0)
+    {
+      has_s=1;
+      has_R=1;    
     }
 
   }
@@ -696,8 +772,7 @@ void ls_R(char path[])
       restored_ls(direntp);
     }
        sort(filenames,0,file_cnt-1);                          
-    int j=0;
-    int i=0;
+    int j=0;;
     for(j=0;j<file_cnt;++j)
     {
       if(has_aRl==1||has_Rl==1)
@@ -712,9 +787,17 @@ void ls_R(char path[])
       struct stat info;
       char temp1[PATH_MAX];
       sprintf(temp1,"%s/%s",path,filenames[j]);
-      if(stat(temp1,&info)==-1)
+      if(lstat(temp1,&info)==-1)
         perror(temp1);
       int color=get_color(info);
+         if(has_s==1)
+          {                       
+             long long size=info.st_size/1024;                              
+               if(size<=4)           
+                  printf("4   ");                
+               else         
+                  printf("%-4lld",size);                                                                                                                                                    
+           }                     
       printf_name2(filenames[j],color);
     }
   }
@@ -738,9 +821,13 @@ void ls_R(char path[])
       struct stat info;
       char temp[PATH_MAX];
       sprintf(temp,"%s/%s",path,direntp->d_name);
-      if(stat(temp,&info)==-1)
+      if(lstat(temp,&info)==-1)
         perror(temp);
-      if(S_ISDIR(info.st_mode))//判断是否为目录，如果是目录就进入递归
+      if(S_ISLNK(info.st_mode))
+          {
+            continue;
+          }
+      if(S_ISDIR(info.st_mode)&&(!S_ISLNK(info.st_mode)))//判断是否为目录，如果是目录就进入递归
       {
         ls_R(temp);
       }

@@ -18,7 +18,7 @@ void*tfn(void*argv)
        func();
       
     }
-    printf("I am %d ,pthread: pid = % d,tid = %lu\n",i+1,getpid(),pthread_self());
+   printf("I am %d ,pthread: pid = % d,tid = %lu\n",i+1,getpid(),pthread_self());
 }
 int main()
 {
@@ -34,7 +34,7 @@ int main()
             exit(1);
         }
     }
-    //sleep(i);
+    sleep(1);
     printf("i am main\n");
     //return 0;
     pthread_exit(NULL);
