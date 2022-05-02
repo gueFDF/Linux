@@ -9,7 +9,7 @@ int main()
     pid =fork();
     if(pid==0)
     {
-        printf("---child,my  parent =%d,going to sleep 10s----\n",getppid());
+        printf("----child,my  parent =%d,going to sleep 10s----\n",getppid());
         sleep(10);
         printf("----child die---------\n");
         return 73;
@@ -18,7 +18,7 @@ int main()
     {
         printf("-----my child = %d\n",pid);
           //wpid=wait(NULL)   //不关心子进程结束原因
-            wpid=wait(&status);//如果子进程未终止，父进程阻塞在这个函数上      //一次wait或waitpid只能回收一个子进程
+            wpid=wait(&status);//如果子进程未终止，父进程阻塞在这个函数上
             if(wpid==-1)
             {
                 perror("wait error");

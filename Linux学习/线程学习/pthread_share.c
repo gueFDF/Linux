@@ -12,10 +12,10 @@ void*tfn(void*argv)
     {
         pthread_mutex_lock(&mutex);//加锁
         printf("hello ");
-        sleep(rand()%2);
+        sleep(rand()%3);
         printf("world\n");
         pthread_mutex_unlock(&mutex);//解锁
-        sleep(rand()%2);
+        sleep(rand()%3);
     }
     return NULL;
 }
@@ -39,10 +39,10 @@ int main()
     {
         pthread_mutex_lock(&mutex);
         printf("HELLO ");
-        sleep(rand()%2);
+        sleep(rand()%3);
         printf("WORLD\n");
         pthread_mutex_unlock(&mutex);
-        sleep(rand()%2);
+        sleep(rand()%3);
     }
     pthread_join(tid,NULL);
     pthread_mutex_destroy(&mutex);//销毁互斥锁
