@@ -8,8 +8,6 @@
 int i=0;//产品序号
 sem_t product_num;
 sem_t blank_num;
-pthread_mutex_t lock=PTHREAD_MUTEX_INITIALIZER;//互斥锁
-pthread_cond_t cond=PTHREAD_COND_INITIALIZER;//互斥量
 #define MAX 8//最大容量
 void err_thread(int ret,const char*str)//检查错误
 {
@@ -99,9 +97,5 @@ int main()
     err_thread(ret,"join error");
     ret=pthread_join(cid3,NULL);
     err_thread(ret,"join error");
-    ret=pthread_mutex_destroy(&lock);
-    err_thread(ret,"mutex destroy error");
-    ret=pthread_cond_destroy(&cond);
-    err_thread(ret,"cond destroy error");
     return 0;
 }
