@@ -28,12 +28,12 @@ void*producer(void*arg)
     SPSCQueue*temp;
     while(1)
     {
+        sem_wait(&blank_num);
         temp=(SPSCQueue*)malloc(sizeof(SPSCQueue));
         temp->ret=rand()%1000+1;
         head->count++;
         printf("产生一个产品%d:%d\n",++i,temp->ret);
         SPSCQueue*t;
-        sem_wait(&blank_num);
         t=head->next;
         head->next=temp;
         temp->next=t;
