@@ -23,33 +23,67 @@ typedef struct MPMCQueue
     int count;
 }MPMCQueue;
 MPMCQueue* head;//头节点
+MPMCQueue *MPMCQueueInit(int capacity)
+{
+    head = (MPMCQueue *)malloc(sizeof(MPMCQueue) * capacity);
+    head->next = NULL;
+    head->count = 0;
+    return head;
+}
+void MPMCQueuePush(MPMCQueue *queue, int s)
+{
+    MPMCQueue *temp;
+    temp = (MPMCQueue *)malloc(sizeof(MPMCQueue));
+    temp->ret = s;
+    printf("产生一个产品%d:%d\n", ++i, temp->ret);
+    head->count++;
+    MPMCQueue *t;
+    t = head->next;
+    head->next = temp;
+    temp->next = t;
+}
+void *MPMCQueuePop(MPMCQueue *queue)
+{
+    MPMCQueue *temp;
+    temp = head;
+    while (temp->next->next != NULL) //找到尾节点的上一个
+    {
+        temp = temp->next;
+    }
+    printf("消费一个产品%d:%d\n", i--, temp->next->ret);
+    head->count--;
+    free(temp->next);
+    temp->next = NULL;
+}
+void MPMCQueueDestory(MPMCQueue *head)
+{
+    MPMCQueue *temp = head;
+    while (temp)
+    {
+        MPMCQueue *next;
+        next = temp->next;
+        free(temp);
+        temp = next;
+    }
+}
 void*producer(void*arg)
 {
     MPMCQueue*temp;
     while(1)
     {
-        temp=(MPMCQueue*)malloc(sizeof(MPMCQueue));
-        temp->ret=rand()%1000+1;
         pthread_mutex_lock(&lock);//加锁
         while(head->count==MAX)//若果已到达最大容量，停止生产等待消费者消费
         {
             pthread_cond_wait(&cond,&lock);
         }
-        head->count++;
-        printf("产生一个产品%d:%d\n",++i,temp->ret);
-        MPMCQueue*t;
-        t=head->next;
-        head->next=temp;
-        temp->next=t;
+        MPMCQueuePush(head,rand()%1000+1);
         pthread_mutex_unlock(&lock);
         pthread_cond_signal(&cond);
-        sleep(rand()%2);
     }
     return NULL;
 }
 void*consumer(void*arg)
 {
-    MPMCQueue*temp;
     while(1)
     {
         pthread_mutex_lock(&lock);//加锁
@@ -57,27 +91,17 @@ void*consumer(void*arg)
         {
             pthread_cond_wait(&cond,&lock);//如果没有产品，等待生产者生产
         }
-        temp=head;
-        while(temp->next->next!=NULL)//找到尾节点的上一个
-        {
-            temp=temp->next;
-        }
-        printf("消费一个产品%d:%d\n",i--,temp->next->ret);
-        head->count--;
-        free(temp->next);
-        temp->next=NULL;
+        MPMCQueuePop(head);
         pthread_mutex_unlock(&lock);
         pthread_cond_signal(&cond);
-        sleep(rand()%2);
+       // sleep(rand()%2);
     }
     return NULL;
 }
 
 int main()
 {
-    head=(MPMCQueue*)malloc(sizeof(MPMCQueue));
-    head->next=NULL;
-    head->count=0;
+    head=MPMCQueueInit(1);
     pthread_t pid1,pid2,pid3,cid1,cid2,cid3;
     int ret;
     ret=pthread_create(&pid1,NULL,producer,NULL);//生产者1
@@ -108,5 +132,6 @@ int main()
     err_thread(ret,"mutex destroy error");
     ret=pthread_cond_destroy(&cond);
     err_thread(ret,"cond destroy error");
+    MPMCQueueDestory(head);
     return 0;
 }
