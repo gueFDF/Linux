@@ -62,4 +62,5 @@ int main()
     }
     pthread_mutex_destroy(&lock);
     pthread_cond_destroy(&cond);
+    return 0;
 }
