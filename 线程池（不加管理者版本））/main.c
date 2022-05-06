@@ -7,7 +7,7 @@ void taskFunc(void*arg)
 }
 int main()
 {
-    threadpool*pool=threadpoolinit(5);
+    threadpool*pool=threadpoolinit(3);
     for(int i=0;i<100;i++)
     {
         int*num=(int*)malloc(sizeof(int));

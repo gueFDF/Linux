@@ -5,7 +5,6 @@ void *worker(void *arg)
     while (1)
     {
         pthread_mutex_lock(&pool->mutexpool);
-        pool->liveNUM++;
         //当前任务队列是否为空
         while (pool->first == NULL && !pool->shutdown)
         {
@@ -23,17 +22,11 @@ void *worker(void *arg)
         pool->first = t->next;
         pthread_mutex_unlock(&pool->mutexpool);//解锁让其他线程去执行其他任务
         pthread_mutex_lock(&pool->mutexBusy);
-        pool->busyNUM++;
         pool->tasksize--;
         pthread_mutex_unlock(&pool->mutexBusy);
         t->run(t->arg);
         free(t);
         t=NULL;
-        pthread_mutex_lock(&pool->mutexBusy);
-        pool->busyNUM--;
-        pthread_mutex_unlock(&pool->mutexBusy);
-
-
     }
     return NULL;
 }
@@ -46,8 +39,6 @@ threadpool *threadpoolinit(int number)
         return NULL;
     }
     pool->threadNUM = number;
-    pool->exitNUM = 0;
-    pool->busyNUM = 0;
     pool->tasksize=0;
     pool->first = NULL;
     pool->end = NULL;
@@ -88,20 +79,6 @@ void threadpoolAdd(threadpool*pool,void(*run)(void*),void*arg)
     pool->tasksize++;
     pthread_mutex_unlock(&pool->mutexpool);
 }
-int threadpoolBusyNUM(threadpool*pool)
-{
-    pthread_mutex_lock(&pool->mutexBusy);
-    int busyNUM= pool->busyNUM;
-    pthread_mutex_unlock(&pool->mutexBusy);
-    return busyNUM;
-}
-int threadpoolliveNUM(threadpool*pool)
-{
-    pthread_mutex_lock(&pool->mutexpool);
-    int liveNUM=pool->liveNUM;
-    pthread_mutex_unlock(&pool->mutexpool);
-    return liveNUM;
-}
 int threadpooldestroy(threadpool*pool)
 {
     if(pool==NULL)
@@ -110,7 +87,7 @@ int threadpooldestroy(threadpool*pool)
     }
     pool->shutdown=1;//关闭线程池.管理者线程退出
     //唤醒阻塞的消费者线程顺便销毁
-    for(int i=0;i<pool->liveNUM;i++)
+    for(int i=0;i<pool->threadNUM;i++)
     {
         pthread_cond_signal(&pool->notempty);
     }

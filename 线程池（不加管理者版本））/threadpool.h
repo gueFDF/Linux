@@ -17,9 +17,6 @@ typedef struct threadpool
     task*first;
     task*end;
     int threadNUM;//线程数量
-    int busyNUM;//正在线程个数
-    int liveNUM;//活着的线程数量
-    int exitNUM;//要销毁的线程数量
     int tasksize;//任务数量
     pthread_mutex_t mutexpool;//锁整个线程池
     pthread_mutex_t mutexBusy;//锁busyNUM变量
