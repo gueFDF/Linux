@@ -28,13 +28,4 @@ threadpool*threadpoolinit(int nmberu);
 int threadpooldestroy(threadpool*pool);
 //给线程池添加任务
 void threadpoolAdd(threadpool*pool,void(*run)(void*),void*arg);
-
-//获取线程池中工作的线程数量
-int threadpoolBusyNUM(threadpool*pool);
-//获取线程池中活着的线程数量
-int threadpoolliveNUM(threadpool*pool);
-
-
-void*manager(void*arg);
 void*worker(void*arg);
-void threadexit(threadpool*ppol);
