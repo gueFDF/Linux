@@ -19,11 +19,8 @@ typedef struct threadpool
     int threadNUM;//线程数量
     int tasksize;//任务数量
     pthread_mutex_t mutexpool;//锁整个线程池
-    pthread_mutex_t mutexBusy;//锁busyNUM变量
     pthread_cond_t notempty;//任务队列是不是空
     int shutdown;//是不是要销毁线程池，销毁为1，不销毁为0
-
-
 }threadpool;
 //创建线程池并初始化
 threadpool*threadpoolinit(int nmberu);
