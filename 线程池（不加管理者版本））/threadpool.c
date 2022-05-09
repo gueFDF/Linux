@@ -20,10 +20,8 @@ void *worker(void *arg)
         //从任务队列中取出任务
         task *t = pool->first;
         pool->first = t->next;
-        pthread_mutex_unlock(&pool->mutexpool);//解锁让其他线程去执行其他任务
-        pthread_mutex_lock(&pool->mutexBusy);
         pool->tasksize--;
-        pthread_mutex_unlock(&pool->mutexBusy);
+        pthread_mutex_unlock(&pool->mutexpool);//i解锁让其他线程去执行其他任务
         t->run(t->arg);
         free(t);
         t=NULL;
@@ -43,7 +41,6 @@ threadpool *threadpoolinit(int number)
     pool->first = NULL;
     pool->end = NULL;
     //锁和条件变量初化
-    pthread_mutex_init(&pool->mutexBusy, NULL);
     pthread_mutex_init(&pool->mutexpool, NULL);
     pthread_cond_init(&pool->notempty, NULL);
     //创建线程
@@ -93,7 +90,6 @@ int threadpooldestroy(threadpool*pool)
     }
     //回收锁和条件变量
     pthread_mutex_destroy(&pool->mutexpool);
-    pthread_mutex_destroy(&pool->mutexBusy);
     pthread_cond_destroy(&pool->notempty);
     //释放线程池
     free(pool);
