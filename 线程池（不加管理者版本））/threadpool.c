@@ -24,7 +24,7 @@ void *worker(void *arg)
         pthread_mutex_unlock(&pool->mutexpool);//i解锁让其他线程去执行其他任务
         t->run(t->arg);
         free(t);
-        t=NULL;
+        t=NULL; 
     }
     return NULL;
 }
@@ -43,13 +43,13 @@ threadpool *threadpoolinit(int number)
     //锁和条件变量初化
     pthread_mutex_init(&pool->mutexpool, NULL);
     pthread_cond_init(&pool->notempty, NULL);
+    pool->shutdown=0;
     //创建线程
     for (int i = 0; i < number; i++)
     {
         pthread_t tid;
         pthread_create(&tid, NULL, worker, pool);
     }
-    pool->shutdown=0;
     return pool;
 }
 void threadpoolAdd(threadpool*pool,void(*run)(void*),void*arg)
@@ -74,6 +74,7 @@ void threadpoolAdd(threadpool*pool,void(*run)(void*),void*arg)
         pool->end=t;
     }
     pool->tasksize++;
+    pthread_cond_signal(&pool->notempty);//唤醒阻塞的线程
     pthread_mutex_unlock(&pool->mutexpool);
 }
 int threadpooldestroy(threadpool*pool)
@@ -82,7 +83,7 @@ int threadpooldestroy(threadpool*pool)
     {
         return -1;
     }
-    pool->shutdown=1;//关闭线程池.管理者线程退出
+    pool->shutdown=1;//关闭线程池
     //唤醒阻塞的消费者线程顺便销毁
     for(int i=0;i<pool->threadNUM;i++)
     {
