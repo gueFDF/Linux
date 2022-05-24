@@ -166,6 +166,7 @@ void threadpoolAdd(threadpool*pool,void(*run)(void*),void*arg)
         pool->end=t;
     }
     pool->tasksize++;
+    pthread_cond_signal(&pool->notempty);
     pthread_mutex_unlock(&pool->mutexpool);
 }
 int threadpoolBusyNUM(threadpool*pool)
