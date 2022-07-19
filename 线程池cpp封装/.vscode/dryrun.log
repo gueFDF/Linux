@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/gty/vscode/Linux/线程池cpp封装'
+make: Leaving directory '/home/gty/vscode/Linux/线程池cpp封装'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+
